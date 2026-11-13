@@ -1,0 +1,200 @@
+:root {
+  --tab-active: #4a4a4a;
+  --border: #c8c8c8;
+  --header: #f4f4f4;
+  --muted: #666;
+  --link: #2c5aa0;
+  --row-alt: #f7f7f7;
+  --cell-pos: #e8f5e9;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 12px;
+  color: #333;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: #fff;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tab-bar {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+  background: #f6f6f6;
+  min-height: 32px;
+  overflow-x: auto;
+}
+
+.tab {
+  border: 0;
+  background: transparent;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--link);
+  font-size: 12px;
+  border-right: 1px solid #e5e5e5;
+}
+
+.tab.active {
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 #4e79a7;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  min-height: 0;
+  flex: 1;
+}
+
+.view {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 12px 8px;
+}
+
+.view h1 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.table-scroll {
+  overflow: auto;
+  flex: 1;
+  border: 1px solid var(--border);
+}
+
+.crosstab {
+  border-collapse: collapse;
+  width: max-content;
+  table-layout: auto;
+}
+
+.crosstab th,
+.crosstab td {
+  border: 1px solid #ddd;
+  padding: 3px 8px;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.crosstab .col-campus {
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crosstab .col-customer {
+  max-width: 128px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crosstab .col-other {
+  max-width: 128px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crosstab .col-contract {
+  max-width: 76px;
+}
+
+.crosstab thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  font-weight: 600;
+  text-align: left;
+  z-index: 2;
+}
+
+.crosstab .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.crosstab .pos {
+  background: var(--cell-pos);
+}
+
+.crosstab .group {
+  background: #fff;
+}
+
+.crosstab tbody tr:hover td {
+  background: #eef6ff;
+}
+
+.filters {
+  border-left: 1px solid var(--border);
+  padding: 10px 12px 24px;
+  overflow: auto;
+  background: #fff;
+}
+
+.filters h2 {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.filters h2:first-child {
+  margin-top: 0;
+}
+
+.filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.filter-list label {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  cursor: pointer;
+  line-height: 1.3;
+}
+
+.chart-wrap {
+  flex: 1;
+  min-height: 420px;
+}
+
+.legend-note {
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.status {
+  padding: 24px;
+}
+
+.error {
+  color: #a33;
+}
+
+.toolbar {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+}
