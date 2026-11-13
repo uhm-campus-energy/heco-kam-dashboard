@@ -14,4 +14,4 @@ npm run dev
 
 ## GitHub Pages
 
-Enable Pages with **GitHub Actions** as the source. Push to `main`; the workflow builds the JSON from the CSV and deploys `dist/`.
+https://uhm-campus-energy.github.io/heco-kam-dashboard/
