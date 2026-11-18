@@ -64,7 +64,7 @@ export function App() {
 
   const title = TABS.find((t) => t.id === tab)?.label ?? "";
 
-  if (error) return <div className="status error">{error}. Run python3 scripts/prepare_data.py</div>;
+  if (error) return <div className="status error">{error}. Run python3 scripts/02_prepare_data.py</div>;
   if (!data || !filters) return <div className="status">Loading HECO KAM View…</div>;
 
   const onToggle = (

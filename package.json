@@ -4,10 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "prepare-data": "python3 scripts/prepare_data.py",
-    "predev": "python3 scripts/prepare_data.py",
+    "prepare-data": "python3 scripts/02_prepare_data.py",
+    "predev": "python3 scripts/02_prepare_data.py",
     "dev": "vite",
-    "prebuild": "python3 scripts/prepare_data.py",
+    "prebuild": "python3 scripts/02_prepare_data.py",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },
