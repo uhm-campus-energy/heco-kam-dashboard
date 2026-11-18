@@ -35,7 +35,7 @@ def main() -> None:
     if shutil.which("psql") is None:
         sys.exit("psql was not found on PATH")
     export_csv()
-    subprocess.run([sys.executable, str(ROOT / "scripts" / "prepare_data.py")], check=True)
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "02_prepare_data.py")], check=True)
 
 
 if __name__ == "__main__":

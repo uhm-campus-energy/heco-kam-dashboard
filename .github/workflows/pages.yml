@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-      - run: python3 scripts/prepare_data.py
+      - run: python3 scripts/02_prepare_data.py
       - run: npm ci
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
