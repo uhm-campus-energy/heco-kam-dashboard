@@ -3,7 +3,8 @@ import type { BillRow, Filters, LeafRow } from "../types";
 export function applyFilters(rows: BillRow[], filters: Filters): BillRow[] {
   return rows.filter((row) => {
     if (filters.fiscalYears.size && !filters.fiscalYears.has(row.fy)) return false;
-    if (filters.campuses.size && !filters.campuses.has(row.campus)) return false;
+    const location = manoaLocation(row) ?? row.campus;
+    if (filters.campuses.size && !filters.campuses.has(location)) return false;
     if (filters.customers.size && !filters.customers.has(row.customer)) return false;
     if (filters.contracts && filters.contracts.size && !filters.contracts.has(row.contract)) {
       return false;
@@ -34,12 +35,13 @@ export function pivotLeaves(
 ): LeafRow[] {
   const map = new Map<string, LeafRow>();
   for (const row of rows) {
+    const campus = manoaLocation(row) ?? row.campus;
     const contract = includeContract ? row.contract : "";
-    const id = `${row.campus}\0${row.customer}\0${row.other}\0${contract}`;
+    const id = `${campus}\0${row.customer}\0${row.other}\0${contract}`;
     let leaf = map.get(id);
     if (!leaf) {
       leaf = {
-        campus: row.campus,
+        campus,
         customer: row.customer,
         other: row.other,
         contract,
@@ -52,33 +54,102 @@ export function pivotLeaves(
     leaf.byMonth[row.monthKey] = (leaf.byMonth[row.monthKey] ?? 0) + value;
     leaf.total += value;
   }
+  const order = MANOA_LOCATIONS as readonly string[];
   return [...map.values()].sort((a, b) =>
-    a.campus.localeCompare(b.campus) ||
+    (order.indexOf(a.campus as (typeof MANOA_LOCATIONS)[number]) - order.indexOf(b.campus as (typeof MANOA_LOCATIONS)[number])) ||
     a.customer.localeCompare(b.customer) ||
     a.other.localeCompare(b.other) ||
     a.contract.localeCompare(b.contract, undefined, { numeric: true }),
   );
 }
 
-export function campusTotals(rows: BillRow[], metric: "kwh" | "amount"): { campus: string; value: number }[] {
-  const map = new Map<string, number>();
-  for (const row of rows) {
-    map.set(row.campus, (map.get(row.campus) ?? 0) + row[metric]);
-  }
-  return [...map.entries()]
-    .map(([campus, value]) => ({ campus, value }))
-    .sort((a, b) => a.campus.localeCompare(b.campus));
+export const MANOA_LOCATIONS = [
+  "CC_Admin_Office",
+  "Hawaii_CC_KO_Education",
+  "Hawaii_CC_KO_Palamanui",
+  "Hawaii_CC_Manono",
+  "Honolulu_CC",
+  "Kapiolani_CC",
+  "Leeward_CC",
+  "Maui_CC_Molokai",
+  "UH_Hilo",
+  "UH_Manoa",
+  "UH_West_Oahu",
+  "Windward_CC",
+] as const;
+
+// Tableau's Hawaii_CC_KO_Education group. The CSV has no column for that label;
+// these are the only three contracts in the group.
+const KO_EDUCATION_CONTRACTS = new Set(["30560495", "30560497", "30560531"]);
+
+function isKoEducation(row: BillRow): boolean {
+  return KO_EDUCATION_CONTRACTS.has(row.contract);
 }
 
-export function manoaByCustomer(rows: BillRow[]): { customer: string; value: number }[] {
-  const map = new Map<string, number>();
-  for (const row of rows) {
-    if (row.campus !== "Manoa") continue;
-    map.set(row.customer, (map.get(row.customer) ?? 0) + row.kwh);
+export function manoaLocation(row: BillRow): string | null {
+  const other = row.other.toLowerCase();
+  switch (row.campus) {
+    case "CC":
+      return "CC_Admin_Office";
+    case "Hawcc":
+      if (isKoEducation(row)) return "Hawaii_CC_KO_Education";
+      if (other.includes("palamanui")) return "Hawaii_CC_KO_Palamanui";
+      if (other.includes("manono")) return "Hawaii_CC_Manono";
+      return "Hawaii_CC_KO_Education";
+    case "HCC":
+      return "Honolulu_CC";
+    case "KCC":
+      return "Kapiolani_CC";
+    case "LCC":
+      return "Leeward_CC";
+    case "MauiCC":
+      return "Maui_CC_Molokai";
+    case "Hilo":
+      if (isKoEducation(row)) return "Hawaii_CC_KO_Education";
+      return "UH_Hilo";
+    case "Manoa":
+      return "UH_Manoa";
+    case "UHWO":
+      return "UH_West_Oahu";
+    case "WCC":
+      return "Windward_CC";
+    default:
+      return null;
   }
-  return [...map.entries()]
-    .map(([customer, value]) => ({ customer, value }))
-    .sort((a, b) => b.value - a.value);
+}
+
+export function kwhByLocationCustomer(rows: BillRow[]): {
+  locations: string[];
+  series: { customer: string; values: number[] }[];
+} {
+  const locations: string[] = [...MANOA_LOCATIONS];
+  const byCustomer = new Map<string, number[]>();
+  for (const row of rows) {
+    const location = manoaLocation(row);
+    if (!location) continue;
+    let index = locations.indexOf(location);
+    if (index < 0) {
+      locations.push(location);
+      index = locations.length - 1;
+      for (const values of byCustomer.values()) values.push(0);
+    }
+    let values = byCustomer.get(row.customer);
+    if (!values) {
+      values = locations.map(() => 0);
+      byCustomer.set(row.customer, values);
+    }
+    values[index] = (values[index] ?? 0) + row.kwh;
+  }
+  const series = [...byCustomer.entries()]
+    .map(([customer, values]) => ({
+      customer,
+      values,
+      total: values.reduce((sum, value) => sum + value, 0),
+    }))
+    .filter((series) => series.total !== 0)
+    .sort((a, b) => a.customer.localeCompare(b.customer))
+    .map(({ customer, values }) => ({ customer, values }));
+  return { locations, series };
 }
 
 export function trendByContract(rows: BillRow[]): {

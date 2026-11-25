@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Crosstab } from "./components/Crosstab";
+import { AnnualCampus, Crosstab } from "./components/Crosstab";
 import { CampusBar, ManoaStack, TrendChart } from "./components/Charts";
 import { FilterPane } from "./components/FilterPane";
-import { applyFilters } from "./lib/aggregate";
+import { MANOA_LOCATIONS, applyFilters } from "./lib/aggregate";
 import type { Dataset, Filters, TabId } from "./types";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "detail-kwh", label: "Detailed kWh Usage" },
   { id: "detail-amount", label: "Detailed Amount $" },
-  { id: "campus-kwh", label: "Campus Total kWh Usage" },
+  { id: "campus-kwh", label: "Annual Campus Total kWh" },
   { id: "campus-amount", label: "Campus Total Amount $" },
   { id: "bar-wo-manoa", label: "Campus Total kWh Usage w/o Manoa" },
   { id: "bar-manoa", label: "Campus Total kWh Usage Manoa" },
@@ -41,8 +41,8 @@ export function App() {
       .then((payload: Dataset) => {
         setData(payload);
         setFilters({
-          fiscalYears: new Set(payload.fiscalYears.filter((y) => y === "fy26" || y === "fy27")),
-          campuses: new Set(["Manoa"]),
+          fiscalYears: new Set(payload.fiscalYears.filter((y) => y === "fy26")),
+          campuses: new Set(MANOA_LOCATIONS),
           customers: new Set(payload.customers),
           contracts: null,
         });
@@ -53,6 +53,25 @@ export function App() {
   const filtered = useMemo(() => {
     if (!data || !filters) return [];
     return applyFilters(data.rows, filters);
+  }, [data, filters]);
+
+  const manoaRows = useMemo(() => {
+    if (!data || !filters) return [];
+    return applyFilters(data.rows, { ...filters, campuses: new Set() });
+  }, [data, filters]);
+
+  const annualRows = useMemo(() => {
+    if (!data || !filters) return [];
+    return applyFilters(data.rows, { ...filters, campuses: new Set(), customers: new Set() });
+  }, [data, filters]);
+
+  const withoutManoaRows = useMemo(() => {
+    if (!data || !filters) return [];
+    return applyFilters(data.rows, {
+      ...filters,
+      campuses: new Set(),
+      customers: new Set(),
+    }).filter((row) => row.campus !== "Manoa");
   }, [data, filters]);
 
   const contracts = useMemo(() => {
@@ -77,8 +96,12 @@ export function App() {
         const current = prev.contracts ?? new Set(contracts);
         return { ...prev, contracts: toggleSet(current, value, contracts) };
       }
+      if (key === "fiscalYears" && (tab === "bar-manoa" || tab === "bar-wo-manoa" || tab === "campus-kwh")) {
+        if (value === "ALL") return { ...prev, fiscalYears: new Set(data.fiscalYears) };
+        return { ...prev, fiscalYears: new Set([value]) };
+      }
       const allValues =
-        key === "fiscalYears" ? data.fiscalYears : key === "campuses" ? data.campuses : data.customers;
+        key === "fiscalYears" ? data.fiscalYears : key === "campuses" ? [...MANOA_LOCATIONS] : data.customers;
       return { ...prev, [key]: toggleSet(prev[key], value, allValues) };
     });
   };
@@ -105,23 +128,24 @@ export function App() {
           {tab === "detail-amount" ? (
             <Crosstab rows={filtered} metric="amount" includeContract monthly />
           ) : null}
-          {tab === "campus-kwh" ? (
-            <Crosstab rows={filtered} metric="kwh" includeContract={false} monthly={false} />
-          ) : null}
+          {tab === "campus-kwh" ? <AnnualCampus rows={annualRows} /> : null}
           {tab === "campus-amount" ? (
             <Crosstab rows={filtered} metric="amount" includeContract={false} monthly={false} />
           ) : null}
-          {tab === "bar-wo-manoa" ? <CampusBar rows={filtered} /> : null}
-          {tab === "bar-manoa" ? <ManoaStack rows={filtered} /> : null}
+          {tab === "bar-wo-manoa" ? <CampusBar rows={withoutManoaRows} /> : null}
+          {tab === "bar-manoa" ? <ManoaStack rows={manoaRows} /> : null}
           {tab === "trend" ? <TrendChart rows={filtered} /> : null}
           <div className="toolbar">
-            Source: heco_kam_view.csv · {filtered.length.toLocaleString()} billing rows
+            Source: heco_kam_view.csv · {(tab === "bar-wo-manoa" ? withoutManoaRows : tab === "bar-manoa" ? manoaRows : tab === "campus-kwh" ? annualRows : filtered).length.toLocaleString()} billing rows
           </div>
         </main>
         <FilterPane
           data={data}
           filters={filters}
           showContracts={tab === "trend"}
+          yearMode={tab === "bar-manoa" || tab === "bar-wo-manoa" || tab === "campus-kwh" ? "single" : "multi"}
+          yearOnly={tab === "bar-wo-manoa" || tab === "campus-kwh"}
+          campuses={[...MANOA_LOCATIONS]}
           contracts={contracts}
           onToggle={onToggle}
         />

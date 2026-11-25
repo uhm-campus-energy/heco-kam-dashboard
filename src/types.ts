@@ -2,6 +2,8 @@ export type BillRow = {
   campus: string;
   customer: string;
   other: string;
+  city: string;
+  street: string;
   contract: string;
   fy: string;
   month: string;

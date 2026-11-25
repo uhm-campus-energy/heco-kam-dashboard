@@ -52,6 +52,8 @@ def main() -> None:
             campus = (rec.get("campus_affiliation") or "").strip() or "Null"
             customer = (rec.get("customer_name") or "").strip()
             other = (rec.get("other_identifier") or "").strip() or "Not assigned"
+            city = (rec.get("serv_addr_city") or "").strip()
+            street = (rec.get("serv_addr_street") or "").strip()
             contract = (rec.get("contract") or "").strip()
             fy = (rec.get("fiscal_year") or "").strip()
             to_raw = (rec.get("billing_period_to") or "").strip()
@@ -75,6 +77,8 @@ def main() -> None:
                     "campus": campus,
                     "customer": customer,
                     "other": other,
+                    "city": city,
+                    "street": street,
                     "contract": contract,
                     "fy": fy,
                     "month": month,
